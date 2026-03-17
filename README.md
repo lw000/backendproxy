@@ -20,7 +20,7 @@ backendproxy/
 ├── proxy/
 │   └── proxy.go         # 代理逻辑
 ├── logger/
-│   └── logger.go        # 日志初始化
+│   └── logger.go        # 日志日志初始化
 ├── service/
 │   └── service.go       # 服务封装
 ├── monitor/
@@ -28,7 +28,10 @@ backendproxy/
 ├── static/
 │   └── index.html       # 监控页面
 ├── config.toml          # 配置文件
-└── go.mod
+├── build.bat            # 编译脚本
+├── release.bat          # 发布脚本
+├── go.mod               # Go 模块
+└── README.md            # 说明文档
 ```
 
 ## 配置说明
@@ -62,7 +65,33 @@ port = 9090             # 监控服务端口
 
 ## 编译运行
 
-### 编译
+### 方式一：使用脚本（推荐）
+
+#### 编译
+
+```bash
+.\build.bat
+```
+
+编译脚本会自动完成：
+1. 检查 Go 环境
+2. 清理旧的编译文件
+3. 下载依赖
+4. 编译程序
+5. 创建日志目录
+
+#### 发布
+
+```bash
+.\release.bat
+```
+
+发布脚本会自动完成：
+1. 检查可执行文件
+2. 生成时间戳目录
+3. 拷贝程序、配置、静态文件到 `prod/backendproxy_YYYYMMDD-HHMMSS/`
+
+### 方式二：手动编译
 
 ```bash
 go build -o bin/backendproxy.exe main.go
@@ -72,10 +101,28 @@ go build -o bin/backendproxy.exe main.go
 
 ```bash
 # 使用默认配置文件 config.toml
-./bin/backendproxy.exe
+.\bin\backendproxy.exe
 
 # 指定配置文件
-./bin/backendproxy.exe -config=path/to/config.toml
+.\bin\backendproxy.exe -config=path/to/config.toml
+```
+
+## 发布管理
+
+每次发布会在 `prod` 目录下创建带时间戳的新版本：
+
+```
+prod/
+├── backendproxy_20250317-143025/
+│   ├── backendproxy.exe
+│   ├── config.toml
+│   └── static/
+│       └── index.html
+└── backendproxy_20250317-150030/
+    ├── backendproxy.exe
+    ├── config.toml
+    └── static/
+        └── index.html
 ```
 
 ## 监控页面
@@ -90,5 +137,28 @@ go build -o bin/backendproxy.exe main.go
 
 - github.com/BurntSushi/toml - 配置解析
 - github.com/gin-gonic/gin - 监控服务
-- go.uber.org/zap - 日志
+- go.uber.org/zap - 结构化日志
 - gopkg.in/natefinch/lumberjack.v2 - 日志切割
+
+## 快速开始
+
+1. **编译程序**
+   ```bash
+   .\build.bat
+   ```
+
+2. **修改配置**
+   编辑 `config.toml`，设置代理服务、日志和监控配置
+
+3. **运行程序**
+   ```bash
+   .\bin\backendproxy.exe
+   ```
+
+4. **访问监控**
+   打开浏览器访问 `http://localhost:9090`
+
+5. **发布版本**
+   ```bash
+   .\release.bat
+   ```
