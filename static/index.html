@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代理服务监控面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header .time {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .proxy-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .proxy-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .proxy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .proxy-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .proxy-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .proxy-port {
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-running {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .proxy-info {
+            margin-bottom: 16px;
+        }
+
+        .proxy-info p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .proxy-info .target {
+            font-family: monospace;
+            color: #007bff;
+        }
+
+        .proxy-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .logs-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .logs-header h2 {
+            color: #333;
+            font-size: 20px;
+        }
+
+        .logs-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #999;
+            margin-right: 12px;
+        }
+
+        .log-method {
+            color: #007bff;
+            margin-right: 8px;
+        }
+
+        .log-status {
+            font-weight: 600;
+        }
+
+        .log-status-2xx {
+            color: #28a745;
+        }
+
+        .log-status-4xx {
+            color: #ffc107;
+        }
+
+        .log-status-5xx {
+            color: #dc3545;
+        }
+
+        .log-latency {
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .log-details {
+            margin-top: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>代理服务监控面板</h1>
+            <div class="time" id="currentTime"></div>
+        </div>
+
+        <div class="stats-grid" id="proxyStats"></div>
+
+        <div class="logs-section">
+            <div class="logs-header">
+                <h2>最近请求/响应数据</h2>
+            </div>
+            <div class="logs-container" id="logsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString('zh-CN');
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 获取代理状态
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const result = await response.json();
+                if (result.code === 0) {
+                    return result.data;
+                }
+                return [];
+            } catch (error) {
+                console.error('获取状态失败:', error);
+                return [];
+            }
+        }
+
+        // 渲染代理卡片
+        function renderProxyStats(proxies) {
+            const container = document.getElementById('proxyStats');
+            if (proxies.length === 0) {
+                container.innerHTML = '<div class="proxy-card loading">加载中...</div>';
+                return;
+            }
+
+            container.innerHTML = proxies.map(proxy => `
+                <div class="proxy-card">
+                    <div class="proxy-header">
+                        <div class="proxy-title">
+                            <span class="proxy-label">${proxy.label || '未命名服务'}</span>
+                            <span class="proxy-port">:${proxy.port}</span>
+                        </div>
+                        <span class="status-badge ${proxy.running ? 'status-running' : 'status-stopped'}">
+                            ${proxy.running ? '运行中' : '已停止'}
+                        </span>
+                    </div>
+                    <div class="proxy-info">
+                        <p>目标: <span class="target">${proxy.target}</span></p>
+                        <p>启动时间: ${new Date(proxy.start_time).toLocaleString('zh-CN')}</p>
+                    </div>
+                    <div class="proxy-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${proxy.total_reqs}</div>
+                            <div class="stat-label">总请求</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${proxy.success_reqs}</div>
+                            <div class="stat-label">成功</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${proxy.avg_latency}ms</div>
+                            <div class="stat-label">平均延迟</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 渲染日志
+        function renderLogs(proxies) {
+            const container = document.getElementById('logsContainer');
+            const allLogs = [];
+
+            proxies.forEach(proxy => {
+                if (proxy.recent_logs && proxy.recent_logs.length > 0) {
+                    proxy.recent_logs.forEach(log => {
+                        allLogs.push({
+                            ...log,
+                            proxyLabel: proxy.label,
+                            proxyPort: proxy.port
+                        });
+                    });
+                }
+            });
+
+            // 按时间倒序排列
+            allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            if (allLogs.length === 0) {
+                container.innerHTML = '<div class="log-entry">暂无日志数据</div>';
+                return;
+            }
+
+            container.innerHTML = allLogs.slice(0, 50).map(log => {
+                const statusClass = log.status_code >= 200 && log.status_code < 300 ? 'log-status-2xx' :
+                                   log.status_code >= 400 && log.status_code < 500 ? 'log-status-4xx' :
+                                   'log-status-5xx';
+
+                const time = new Date(log.timestamp).toLocaleString('zh-CN');
+
+                return `
+                    <div class="log-entry">
+                        <span class="log-time">[${log.proxyLabel}:${log.proxyPort}]</span>
+                        <span class="log-time">${time}</span>
+                        <span class="log-method">${log.method}</span>
+                        <span>${log.path}</span>
+                        <span class="log-status ${statusClass}">${log.status_code}</span>
+                        <span class="log-latency">${log.latency}ms</span>
+                        ${log.request_data ? `<div class="log-details">请求: ${log.request_data}</div>` : ''}
+                        ${log.response_data ? `<div class="log-details">响应: ${log.response_data}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 主更新函数
+        async function update() {
+            const proxies = await fetchStatus();
+            renderProxyStats(proxies);
+            renderLogs(proxies);
+        }
+
+        // 初始加载和定时更新
+        update();
+        setInterval(update, 2000);
+    </script>
+</body>
+</html>
