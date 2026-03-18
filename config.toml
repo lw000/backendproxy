@@ -24,6 +24,12 @@ label = "Redis 服务"
 target = "localhost:6379"
 type = "tcp"
 
+[[proxies]]
+port = 15432
+label = "PostgreSQL 服务"
+target = "localhost:5432"
+type = "tcp"
+
 # 日志配置
 [log]
 dir = "./logs"
