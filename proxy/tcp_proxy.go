@@ -43,11 +43,13 @@ type TCPProxyStatus struct {
 
 // TCPProxyService TCP 代理服务
 type TCPProxyService struct {
-	config    config.ProxyConfig
-	status    *TCPProxyStatus
-	mu        sync.RWMutex
-	listener  net.Listener
-	connWg    sync.WaitGroup
+	config      config.ProxyConfig
+	status      *TCPProxyStatus
+	mu          sync.RWMutex
+	listener    net.Listener
+	connWg      sync.WaitGroup
+	connMu      sync.Mutex
+	connections map[net.Conn]struct{}
 }
 
 // startTCPProxy 启动 TCP 代理
@@ -68,7 +70,8 @@ func (m *Manager) startTCPProxy(cfg config.ProxyConfig) error {
 			RecentLogs:  make([]TCPLog, 0, 100),
 			StartTime:   time.Now(),
 		},
-		listener: listener,
+		listener:    listener,
+		connections: make(map[net.Conn]struct{}),
 	}
 
 	// 使用 TCP 专用锁，避免与 HTTP 读写锁冲突
@@ -112,6 +115,16 @@ func (s *TCPProxyService) handleConnection(clientConn net.Conn) {
 	defer s.connWg.Done()
 	defer clientConn.Close()
 
+	// 注册连接
+	s.connMu.Lock()
+	s.connections[clientConn] = struct{}{}
+	s.connMu.Unlock()
+	defer func() {
+		s.connMu.Lock()
+		delete(s.connections, clientConn)
+		s.connMu.Unlock()
+	}()
+
 	atomic.AddInt64(&s.status.TotalConns, 1)
 	atomic.AddInt64(&s.status.ActiveConns, 1)
 	defer atomic.AddInt64(&s.status.ActiveConns, -1)
@@ -133,14 +146,38 @@ func (s *TCPProxyService) handleConnection(clientConn net.Conn) {
 	}
 	defer targetConn.Close()
 
+	// 启用 TCP Keep-Alive，保持长连接
+	if tcpConn, ok := clientConn.(*net.TCPConn); ok {
+		tcpConn.SetKeepAlive(true)
+		tcpConn.SetKeepAlivePeriod(30 * time.Second)
+	}
+	if tcpConn, ok := targetConn.(*net.TCPConn); ok {
+		tcpConn.SetKeepAlive(true)
+		tcpConn.SetKeepAlivePeriod(30 * time.Second)
+	}
+
+	// 设置读写超时，防止无限阻塞
+	deadline := time.Now().Add(300 * time.Second) // 5 分钟无数据传输则超时
+	clientConn.SetReadDeadline(deadline)
+	targetConn.SetReadDeadline(deadline)
+
+	// 注册目标连接
+	s.connMu.Lock()
+	s.connections[targetConn] = struct{}{}
+	s.connMu.Unlock()
+	defer func() {
+		s.connMu.Lock()
+		delete(s.connections, targetConn)
+		s.connMu.Unlock()
+	}()
+
 	// 创建双向数据转发
 	var uploadBytes, downloadBytes int64
 	var uploadData, downloadData []byte
 
-	// 上传缓冲区（限制大小以避免内存占用过高）
-	uploadBuffer := make([]byte, 32*1024)
-	// 下载缓冲区
-	downloadBuffer := make([]byte, 32*1024)
+	// 使用更大的缓冲区提高吞吐量（64KB 适合大多数数据库和缓存场景）
+	uploadBuffer := make([]byte, 64*1024)
+	downloadBuffer := make([]byte, 64*1024)
 
 	// 客户端到服务器的数据转发
 	uploadDone := make(chan struct{})
@@ -263,9 +300,19 @@ func (s *TCPProxyService) handleConnection(clientConn net.Conn) {
 // stopTCPProxy 停止 TCP 代理
 func (s *TCPProxyService) stop() error {
 	s.status.Running = false
+
+	// 关闭监听器，停止接受新连接
 	if s.listener != nil {
 		_ = s.listener.Close()
 	}
+
+	// 主动关闭所有活跃连接
+	s.connMu.Lock()
+	for conn := range s.connections {
+		_ = conn.Close()
+	}
+	s.connMu.Unlock()
+
 	// 等待所有连接完成
 	s.connWg.Wait()
 	return nil
