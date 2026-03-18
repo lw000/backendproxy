@@ -19,6 +19,7 @@ type ProxyConfig struct {
 	Port   int    `toml:"port"`
 	Label  string `toml:"label"`
 	Target string `toml:"target"`
+	Type   string `toml:"type"`   // http 或 tcp
 }
 
 // LogConfig 日志配置
@@ -27,6 +28,7 @@ type LogConfig struct {
 	Level      string `toml:"level"`
 	MaxSize    int    `toml:"maxSize"`    // MB
 	MaxBackups int    `toml:"maxBackups"` // 保留文件数
+	Console    bool   `toml:"console"`    // 是否输出到控制台
 }
 
 // MonitorConfig 监控配置
@@ -62,6 +64,17 @@ func Load(filepath string) (*Config, error) {
 	}
 	if cfg.Monitor.Port == 0 {
 		cfg.Monitor.Port = 9090
+	}
+	// 默认启用控制台输出
+	if !cfg.Log.Console {
+		cfg.Log.Console = true
+	}
+
+	// 为每个代理设置默认类型
+	for i := range cfg.Proxies {
+		if cfg.Proxies[i].Type == "" {
+			cfg.Proxies[i].Type = "http"
+		}
 	}
 
 	return &cfg, nil

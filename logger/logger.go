@@ -37,8 +37,23 @@ func Init(cfg config.LogConfig) error {
 		level = zapcore.InfoLevel
 	}
 
-	// 编码器配置
-	encoderConfig := zapcore.EncoderConfig{
+	// 控制台编码器配置（更易读的格式）
+	consoleEncoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "time",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.CapitalColorLevelEncoder, // 彩色级别
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	// 文件编码器配置（JSON 格式）
+	fileEncoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "time",
 		LevelKey:       "level",
 		NameKey:        "logger",
@@ -52,12 +67,29 @@ func Init(cfg config.LogConfig) error {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	// 创建 Core
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
+	// 创建文件 Core
+	fileCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(fileEncoderConfig),
 		zapcore.AddSync(&hook),
 		level,
 	)
+
+	var core zapcore.Core
+
+	// 根据配置决定是否输出到控制台
+	if cfg.Console {
+		// 创建控制台 Core
+		consoleCore := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(consoleEncoderConfig),
+			zapcore.AddSync(os.Stdout),
+			level,
+		)
+		// 组合两个 Core（同时输出到控制台和文件）
+		core = zapcore.NewTee(consoleCore, fileCore)
+	} else {
+		// 只输出到文件
+		core = fileCore
+	}
 
 	// 创建 Logger
 	log = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))

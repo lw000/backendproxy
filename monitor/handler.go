@@ -98,18 +98,10 @@ func (m *Monitor) proxyDetailHandler(c *gin.Context) {
 		return
 	}
 
-	proxySvc := m.proxyManager.GetProxy(portNum)
-	if proxySvc == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code": -1,
-			"msg":  "代理服务不存在",
-		})
-		return
-	}
-
 	status := m.proxyManager.GetStatus()
 	for _, s := range status {
-		if s.Port == portNum {
+		// 检查端口（通过 JSON 反射）
+		if statusMap, ok := getPortFromStatus(s); ok && statusMap == portNum {
 			c.JSON(http.StatusOK, gin.H{
 				"code": 0,
 				"data": s,
@@ -138,12 +130,14 @@ func (m *Monitor) logsHandler(c *gin.Context) {
 
 	status := m.proxyManager.GetStatus()
 	for _, s := range status {
-		if s.Port == portNum {
-			c.JSON(http.StatusOK, gin.H{
-				"code": 0,
-				"data": s.RecentLogs,
-			})
-			return
+		if statusMap, ok := getPortFromStatus(s); ok && statusMap == portNum {
+			if logs, ok := getLogsFromStatus(s); ok {
+				c.JSON(http.StatusOK, gin.H{
+					"code": 0,
+					"data": logs,
+				})
+				return
+			}
 		}
 	}
 
@@ -151,4 +145,28 @@ func (m *Monitor) logsHandler(c *gin.Context) {
 		"code": -1,
 		"msg":  "代理服务不存在",
 	})
+}
+
+// getPortFromStatus 从状态中提取端口号
+func getPortFromStatus(status interface{}) (int, bool) {
+	switch s := status.(type) {
+	case *proxy.ProxyStatus:
+		return s.Port, true
+	case *proxy.TCPProxyStatus:
+		return s.Port, true
+	default:
+		return 0, false
+	}
+}
+
+// getLogsFromStatus 从状态中提取日志
+func getLogsFromStatus(status interface{}) (interface{}, bool) {
+	switch s := status.(type) {
+	case *proxy.ProxyStatus:
+		return s.RecentLogs, true
+	case *proxy.TCPProxyStatus:
+		return s.RecentLogs, true
+	default:
+		return nil, false
+	}
 }

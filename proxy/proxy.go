@@ -29,10 +29,11 @@ type RequestLog struct {
 	ResponseData string   `json:"response_data,omitempty"`
 }
 
-// ProxyStatus 代理状态
+// ProxyStatus 代理状态（HTTP）
 type ProxyStatus struct {
 	Port          int            `json:"port"`
 	Label         string         `json:"label"`
+	Type          string         `json:"type"`
 	Target        string         `json:"target"`
 	Running       bool           `json:"running"`
 	TotalReqs     int64          `json:"total_reqs"`
@@ -40,7 +41,7 @@ type ProxyStatus struct {
 	FailedReqs    int64          `json:"failed_reqs"`
 	AvgLatency    int64          `json:"avg_latency"` // 毫秒
 	RecentLogs    []RequestLog   `json:"recent_logs"`
-	TotalLatency  int64          `json:"-"`
+	TotalLatency  int64          `json:"total_latency"`
 	StartTime     time.Time      `json:"start_time"`
 }
 
@@ -55,9 +56,11 @@ type ProxyService struct {
 
 // Manager 代理管理器
 type Manager struct {
-	proxies map[int]*ProxyService
-	mu      sync.RWMutex
-	cfg     *config.Config
+	proxies    map[int]*ProxyService
+	tcpProxies map[int]*TCPProxyService
+	mu         sync.RWMutex // HTTP 代理锁
+	tcpMu      sync.Mutex   // TCP 代理锁
+	cfg        *config.Config
 }
 
 // GetConfig 获取配置
@@ -68,8 +71,9 @@ func (m *Manager) GetConfig() *config.Config {
 // NewManager 创建代理管理器
 func NewManager(cfg *config.Config) (*Manager, error) {
 	mgr := &Manager{
-		proxies: make(map[int]*ProxyService),
-		cfg:     cfg,
+		proxies:    make(map[int]*ProxyService),
+		tcpProxies: make(map[int]*TCPProxyService),
+		cfg:        cfg,
 	}
 
 	for _, proxyCfg := range cfg.Proxies {
@@ -83,65 +87,92 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 
 // addProxy 添加代理服务
 func (m *Manager) addProxy(cfg config.ProxyConfig) error {
-	target, err := url.Parse(cfg.Target)
-	if err != nil {
-		return fmt.Errorf("解析目标地址失败 [%s]: %w", cfg.Target, err)
+	// 默认类型为 http
+	if cfg.Type == "" {
+		cfg.Type = "http"
 	}
 
-	reverseProxy := httputil.NewSingleHostReverseProxy(target)
+	switch cfg.Type {
+	case "tcp":
+		// TCP 代理不需要预先创建，在 start 时创建
+		return nil
+	case "http":
+		target, err := url.Parse(cfg.Target)
+		if err != nil {
+			return fmt.Errorf("解析目标地址失败 [%s]: %w", cfg.Target, err)
+		}
 
-	// 自定义错误处理
-	reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		logger.L().Error("代理请求失败",
+		reverseProxy := httputil.NewSingleHostReverseProxy(target)
+
+		// 自定义错误处理
+		reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+			logger.L().Error("代理请求失败",
+				zap.Int("port", cfg.Port),
+				zap.String("label", cfg.Label),
+				zap.String("path", r.URL.Path),
+				zap.Error(err),
+			)
+			w.WriteHeader(http.StatusBadGateway)
+		}
+
+		// 自定义响应处理器
+		originalDirector := reverseProxy.Director
+		reverseProxy.Director = func(req *http.Request) {
+			originalDirector(req)
+			req.Header.Set("X-Forwarded-Host", req.Host)
+			req.Header.Set("X-Forwarded-Proto", req.URL.Scheme)
+		}
+
+		service := &ProxyService{
+			config: cfg,
+			reverseProxy: reverseProxy,
+			status: &ProxyStatus{
+				Port:       cfg.Port,
+				Label:      cfg.Label,
+				Type:       "http",
+				Target:     cfg.Target,
+				Running:    false,
+				RecentLogs: make([]RequestLog, 0, 100),
+			},
+		}
+
+		m.mu.Lock()
+		m.proxies[cfg.Port] = service
+		m.mu.Unlock()
+
+		logger.L().Info("添加 HTTP 代理服务",
 			zap.Int("port", cfg.Port),
 			zap.String("label", cfg.Label),
-			zap.String("path", r.URL.Path),
-			zap.Error(err),
+			zap.String("target", cfg.Target),
 		)
-		w.WriteHeader(http.StatusBadGateway)
+
+		return nil
+	default:
+		return fmt.Errorf("不支持的代理类型: %s", cfg.Type)
 	}
-
-	// 自定义响应处理器
-	originalDirector := reverseProxy.Director
-	reverseProxy.Director = func(req *http.Request) {
-		originalDirector(req)
-		req.Header.Set("X-Forwarded-Host", req.Host)
-		req.Header.Set("X-Forwarded-Proto", req.URL.Scheme)
-	}
-
-	service := &ProxyService{
-		config: cfg,
-		reverseProxy: reverseProxy,
-		status: &ProxyStatus{
-			Port:       cfg.Port,
-			Label:      cfg.Label,
-			Target:     cfg.Target,
-			Running:    false,
-			RecentLogs: make([]RequestLog, 0, 100),
-		},
-	}
-
-	m.mu.Lock()
-	m.proxies[cfg.Port] = service
-	m.mu.Unlock()
-
-	logger.L().Info("添加代理服务",
-		zap.Int("port", cfg.Port),
-		zap.String("label", cfg.Label),
-		zap.String("target", cfg.Target),
-	)
-
-	return nil
 }
 
 // Start 启动所有代理服务
 func (m *Manager) Start(ctx context.Context) error {
+	// 启动 HTTP 代理
 	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	for port, proxy := range m.proxies {
 		if err := m.startProxy(ctx, proxy); err != nil {
-			return fmt.Errorf("启动代理服务失败 [%s:%d]: %w", proxy.config.Label, port, err)
+			m.mu.RUnlock()
+			return fmt.Errorf("启动 HTTP 代理服务失败 [%s:%d]: %w", proxy.config.Label, port, err)
+		}
+	}
+	m.mu.RUnlock()
+
+	// 启动 TCP 代理（使用独立的锁，不阻塞 HTTP）
+	for _, proxyCfg := range m.cfg.Proxies {
+		if proxyCfg.Type == "tcp" || proxyCfg.Type == "" {
+			if proxyCfg.Type == "" {
+				proxyCfg.Type = "tcp"
+			}
+			if err := m.startTCPProxy(proxyCfg); err != nil {
+				return fmt.Errorf("启动 TCP 代理服务失败 [%s:%d]: %w", proxyCfg.Label, proxyCfg.Port, err)
+			}
 		}
 	}
 
@@ -183,18 +214,28 @@ func (m *Manager) startProxy(ctx context.Context, proxy *ProxyService) error {
 
 // Stop 停止所有代理服务
 func (m *Manager) Stop() error {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	var errs []error
+
+	// 停止 HTTP 代理
+	m.mu.RLock()
 	for port, proxy := range m.proxies {
 		if proxy.server != nil {
 			if err := proxy.server.Shutdown(context.Background()); err != nil {
-				errs = append(errs, fmt.Errorf("停止代理服务失败 [%d]: %w", port, err))
+				errs = append(errs, fmt.Errorf("停止 HTTP 代理服务失败 [%d]: %w", port, err))
 			}
 			proxy.status.Running = false
 		}
 	}
+	m.mu.RUnlock()
+
+	// 停止 TCP 代理（使用独立的锁）
+	m.tcpMu.Lock()
+	for port, tcpProxy := range m.tcpProxies {
+		if err := tcpProxy.stop(); err != nil {
+			errs = append(errs, fmt.Errorf("停止 TCP 代理服务失败 [%d]: %w", port, err))
+		}
+	}
+	m.tcpMu.Unlock()
 
 	if len(errs) > 0 {
 		return fmt.Errorf("%v", errs)
@@ -204,16 +245,17 @@ func (m *Manager) Stop() error {
 }
 
 // GetStatus 获取所有代理状态
-func (m *Manager) GetStatus() []*ProxyStatus {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (m *Manager) GetStatus() []interface{} {
+	statuses := make([]interface{}, 0, len(m.proxies)+len(m.tcpProxies))
 
-	statuses := make([]*ProxyStatus, 0, len(m.proxies))
+	// HTTP 代理状态
+	m.mu.RLock()
 	for _, proxy := range m.proxies {
 		proxy.mu.RLock()
 		status := &ProxyStatus{
 			Port:        proxy.status.Port,
 			Label:       proxy.status.Label,
+			Type:        proxy.status.Type,
 			Target:      proxy.status.Target,
 			Running:     proxy.status.Running,
 			TotalReqs:   atomic.LoadInt64(&proxy.status.TotalReqs),
@@ -230,6 +272,33 @@ func (m *Manager) GetStatus() []*ProxyStatus {
 
 		statuses = append(statuses, status)
 	}
+	m.mu.RUnlock()
+
+	// TCP 代理状态（使用独立的锁）
+	m.tcpMu.Lock()
+	for _, tcpProxy := range m.tcpProxies {
+		tcpProxy.mu.RLock()
+		status := &TCPProxyStatus{
+			Port:          tcpProxy.status.Port,
+			Label:         tcpProxy.status.Label,
+			Type:          tcpProxy.status.Type,
+			Target:        tcpProxy.status.Target,
+			Running:       tcpProxy.status.Running,
+			TotalConns:    atomic.LoadInt64(&tcpProxy.status.TotalConns),
+			ActiveConns:   atomic.LoadInt64(&tcpProxy.status.ActiveConns),
+			UploadBytes:   atomic.LoadInt64(&tcpProxy.status.UploadBytes),
+			DownloadBytes: atomic.LoadInt64(&tcpProxy.status.DownloadBytes),
+			StartTime:     tcpProxy.status.StartTime,
+		}
+
+		// 复制最近日志
+		status.RecentLogs = make([]TCPLog, len(tcpProxy.status.RecentLogs))
+		copy(status.RecentLogs, tcpProxy.status.RecentLogs)
+		tcpProxy.mu.RUnlock()
+
+		statuses = append(statuses, status)
+	}
+	m.tcpMu.Unlock()
 
 	return statuses
 }
@@ -239,6 +308,13 @@ func (m *Manager) GetProxy(port int) *ProxyService {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.proxies[port]
+}
+
+// GetTCPProxy 获取指定端口的 TCP 代理服务
+func (m *Manager) GetTCPProxy(port int) *TCPProxyService {
+	m.tcpMu.Lock()
+	defer m.tcpMu.Unlock()
+	return m.tcpProxies[port]
 }
 
 // ServeHTTP 实现 http.Handler 接口

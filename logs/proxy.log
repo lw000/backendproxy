@@ -1,0 +1,84 @@
+{"level":"info","time":"2026-03-18T09:16:46.070+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:16:46.073+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:16:46.075+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:16:46.076+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:20:37.865+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:20:37.865+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:20:37.867+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:20:37.867+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:21:18.087+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:21:18.089+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:21:22.915+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:21:22.915+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:21:52.304+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:21:52.306+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:22:40.403+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:22:40.405+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:23:13.661+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:23:13.661+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:26:28.318+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:26:28.319+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:26:35.756+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:26:37.494+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:27:02.995+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:27:02.996+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:27:06.099+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:27:07.780+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:27:49.581+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:27:49.583+0800","caller":"proxy/proxy.go:79","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:27:54.459+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:27:53.645+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:32:48.421+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:32:48.421+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:32:48.423+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:32:48.423+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:32:48.423+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:32:48.423+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:38:49.473+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:38:49.473+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:38:49.474+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:38:49.474+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:38:49.474+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:38:49.474+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:40:52.389+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:40:52.390+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:40:52.391+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:40:52.391+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:40:52.391+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:40:52.391+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:43:17.313+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:43:17.314+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:43:19.736+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:43:21.995+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:43:21.995+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:43:21.995+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:49:28.239+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:49:28.239+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:49:28.241+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:49:28.241+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:49:28.241+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:49:28.241+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:52:03.783+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:52:03.783+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:52:03.784+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:52:03.784+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:52:03.784+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:52:03.784+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:52:11.980+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:52:11.980+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:52:11.981+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:52:11.981+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:52:11.981+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:52:11.981+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:53:16.857+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:53:16.858+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:53:16.859+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:53:16.859+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:53:16.859+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:53:16.859+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}
+{"level":"info","time":"2026-03-18T09:55:53.378+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8080,"label":"用户服务","target":"http://localhost:3000"}
+{"level":"info","time":"2026-03-18T09:55:53.379+0800","caller":"proxy/proxy.go:80","msg":"添加 HTTP 代理服务","port":8081,"label":"订单服务","target":"http://localhost:3001"}
+{"level":"info","time":"2026-03-18T09:55:53.379+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8080,"label":"用户服务"}
+{"level":"info","time":"2026-03-18T09:55:53.379+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":3306,"label":"MySQL 服务","target":"localhost:3307"}
+{"level":"info","time":"2026-03-18T09:55:53.379+0800","caller":"runtime/asm_amd64.s:1693","msg":"代理服务已启动","port":8081,"label":"订单服务"}
+{"level":"info","time":"2026-03-18T09:55:53.380+0800","caller":"proxy/proxy.go:173","msg":"TCP 代理服务已启动","port":16379,"label":"Redis 服务","target":"localhost:6379"}

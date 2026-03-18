@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -42,9 +42,18 @@
             font-size: 14px;
         }
 
+        .header .summary {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
             margin-bottom: 24px;
         }
@@ -56,6 +65,15 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #007bff;
+        }
+
+        .proxy-card.http {
+            border-left-color: #007bff;
+        }
+
+        .proxy-card.tcp {
+            border-left-color: #28a745;
         }
 
         .proxy-card:hover {
@@ -82,12 +100,31 @@
             font-size: 18px;
         }
 
+        .proxy-type {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .proxy-type.http {
+            background: #e7f3ff;
+            color: #007bff;
+        }
+
+        .proxy-type.tcp {
+            background: #e8f5e9;
+            color: #28a745;
+        }
+
         .proxy-port {
             background: #f0f0f0;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
             color: #666;
+            font-family: monospace;
         }
 
         .status-badge {
@@ -167,7 +204,7 @@
         }
 
         .logs-container {
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
         }
 
@@ -222,6 +259,61 @@
             color: #666;
         }
 
+        .tcp-log-entry {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .tcp-log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .tcp-log-time {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .tcp-log-client {
+            color: #28a745;
+            font-family: monospace;
+        }
+
+        .tcp-log-stats {
+            display: flex;
+            gap: 16px;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .tcp-log-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tcp-hex {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            word-break: break-all;
+            font-size: 11px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .tcp-hex-header {
+            color: #666;
+            font-size: 11px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -230,6 +322,31 @@
         .loading {
             animation: pulse 1.5s ease-in-out infinite;
         }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .log-type-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .log-type-http {
+            background: #e7f3ff;
+            color: #007bff;
+        }
+
+        .log-type-tcp {
+            background: #e8f5e9;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -237,13 +354,14 @@
         <div class="header">
             <h1>代理服务监控面板</h1>
             <div class="time" id="currentTime"></div>
+            <div class="summary" id="summary"></div>
         </div>
 
         <div class="stats-grid" id="proxyStats"></div>
 
         <div class="logs-section">
             <div class="logs-header">
-                <h2>最近请求/响应数据</h2>
+                <h2>最近请求/连接数据</h2>
             </div>
             <div class="logs-container" id="logsContainer"></div>
         </div>
@@ -273,45 +391,86 @@
             }
         }
 
+        // 格式化字节数
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
         // 渲染代理卡片
         function renderProxyStats(proxies) {
             const container = document.getElementById('proxyStats');
+            const summary = document.getElementById('summary');
+
             if (proxies.length === 0) {
                 container.innerHTML = '<div class="proxy-card loading">加载中...</div>';
                 return;
             }
 
-            container.innerHTML = proxies.map(proxy => `
-                <div class="proxy-card">
-                    <div class="proxy-header">
-                        <div class="proxy-title">
-                            <span class="proxy-label">${proxy.label || '未命名服务'}</span>
-                            <span class="proxy-port">:${proxy.port}</span>
+            // 统计摘要
+            let httpCount = 0, tcpCount = 0, runningCount = 0;
+            proxies.forEach(p => {
+                if (p.type === 'http') httpCount++;
+                if (p.type === 'tcp') tcpCount++;
+                if (p.running) runningCount++;
+            });
+
+            summary.innerHTML = `HTTP 代理: ${httpCount} | TCP 代理: ${tcpCount} | 运行中: ${runningCount}/${proxies.length}`;
+
+            container.innerHTML = proxies.map(proxy => {
+                const isHTTP = proxy.type === 'http';
+
+                return `
+                    <div class="proxy-card ${proxy.type}">
+                        <div class="proxy-header">
+                            <div class="proxy-title">
+                                <span class="proxy-label">${proxy.label || '未命名服务'}</span>
+                                <span class="proxy-port">:${proxy.port}</span>
+                                <span class="proxy-type ${proxy.type}">${proxy.type}</span>
+                            </div>
+                            <span class="status-badge ${proxy.running ? 'status-running' : 'status-stopped'}">
+                                ${proxy.running ? '运行中' : '已停止'}
+                            </span>
                         </div>
-                        <span class="status-badge ${proxy.running ? 'status-running' : 'status-stopped'}">
-                            ${proxy.running ? '运行中' : '已停止'}
-                        </span>
+                        <div class="proxy-info">
+                            <p>目标: <span class="target">${proxy.target}</span></p>
+                            <p>启动时间: ${new Date(proxy.start_time).toLocaleString('zh-CN')}</p>
+                        </div>
+                        <div class="proxy-stats">
+                            ${isHTTP ? `
+                                <div class="stat-item">
+                                    <div class="stat-value">${proxy.total_reqs}</div>
+                                    <div class="stat-label">总请求</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${proxy.success_reqs}</div>
+                                    <div class="stat-label">成功</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${proxy.avg_latency}ms</div>
+                                    <div class="stat-label">平均延迟</div>
+                                </div>
+                            ` : `
+                                <div class="stat-item">
+                                    <div class="stat-value">${proxy.total_conns}</div>
+                                    <div class="stat-label">总连接</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${proxy.active_conns}</div>
+                                    <div class="stat-label">活跃连接</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${formatBytes(proxy.download_bytes + proxy.upload_bytes)}</div>
+                                    <div class="stat-label">总流量</div>
+                                </div>
+                            `}
+                        </div>
                     </div>
-                    <div class="proxy-info">
-                        <p>目标: <span class="target">${proxy.target}</span></p>
-                        <p>启动时间: ${new Date(proxy.start_time).toLocaleString('zh-CN')}</p>
-                    </div>
-                    <div class="proxy-stats">
-                        <div class="stat-item">
-                            <div class="stat-value">${proxy.total_reqs}</div>
-                            <div class="stat-label">总请求</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${proxy.success_reqs}</div>
-                            <div class="stat-label">成功</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${proxy.avg_latency}ms</div>
-                            <div class="stat-label">平均延迟</div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // 渲染日志
@@ -320,12 +479,24 @@
             const allLogs = [];
 
             proxies.forEach(proxy => {
-                if (proxy.recent_logs && proxy.recent_logs.length > 0) {
+                const isHTTP = proxy.type === 'http';
+
+                if (isHTTP && proxy.recent_logs && proxy.recent_logs.length > 0) {
                     proxy.recent_logs.forEach(log => {
                         allLogs.push({
                             ...log,
                             proxyLabel: proxy.label,
-                            proxyPort: proxy.port
+                            proxyPort: proxy.port,
+                            type: 'http'
+                        });
+                    });
+                } else if (!isHTTP && proxy.recent_logs && proxy.recent_logs.length > 0) {
+                    proxy.recent_logs.forEach(log => {
+                        allLogs.push({
+                            ...log,
+                            proxyLabel: proxy.label,
+                            proxyPort: proxy.port,
+                            type: 'tcp'
                         });
                     });
                 }
@@ -335,29 +506,76 @@
             allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             if (allLogs.length === 0) {
-                container.innerHTML = '<div class="log-entry">暂无日志数据</div>';
+                container.innerHTML = '<div class="empty-state">暂无日志数据</div>';
                 return;
             }
 
             container.innerHTML = allLogs.slice(0, 50).map(log => {
-                const statusClass = log.status_code >= 200 && log.status_code < 300 ? 'log-status-2xx' :
-                                   log.status_code >= 400 && log.status_code < 500 ? 'log-status-4xx' :
-                                   'log-status-5xx';
+                const isHTTP = log.type === 'http';
 
-                const time = new Date(log.timestamp).toLocaleString('zh-CN');
+                if (isHTTP) {
+                    const statusClass = log.status_code >= 200 && log.status_code < 300 ? 'log-status-2xx' :
+                                       log.status_code >= 400 && log.status_code < 500 ? 'log-status-4xx' :
+                                       'log-status-5xx';
 
-                return `
-                    <div class="log-entry">
-                        <span class="log-time">[${log.proxyLabel}:${log.proxyPort}]</span>
-                        <span class="log-time">${time}</span>
-                        <span class="log-method">${log.method}</span>
-                        <span>${log.path}</span>
-                        <span class="log-status ${statusClass}">${log.status_code}</span>
-                        <span class="log-latency">${log.latency}ms</span>
-                        ${log.request_data ? `<div class="log-details">请求: ${log.request_data}</div>` : ''}
-                        ${log.response_data ? `<div class="log-details">响应: ${log.response_data}</div>` : ''}
-                    </div>
-                `;
+                    const time = new Date(log.timestamp).toLocaleString('zh-CN');
+
+                    return `
+                        <div class="log-entry">
+                            <span class="log-type-badge log-type-http">HTTP</span>
+                            <span class="log-time">[${log.proxyLabel}:${log.proxyPort}]</span>
+                            <span class="log-time">${time}</span>
+                            <span class="log-method">${log.method}</span>
+                            <span>${log.path}</span>
+                            <span class="log-status ${statusClass}">${log.status_code}</span>
+                            <span class="log-latency">${log.latency}ms</span>
+                            ${log.request_data ? `<div class="log-details">请求: ${log.request_data}</div>` : ''}
+                            ${log.response_data ? `<div class="log-details">响应: ${log.response_data}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    const time = new Date(log.timestamp).toLocaleString('zh-CN');
+
+                    return `
+                        <div class="tcp-log-entry">
+                            <div class="tcp-log-header">
+                                <div>
+                                    <span class="log-type-badge log-type-tcp">TCP</span>
+                                    <span class="tcp-log-time">[${log.proxyLabel}:${log.proxyPort}]</span>
+                                    <span class="tcp-log-time">${time}</span>
+                                </div>
+                                <span class="tcp-log-client">${log.client_addr}</span>
+                            </div>
+                            <div class="tcp-log-stats">
+                                <span class="tcp-log-stat">⏱️ ${log.duration}ms</span>
+                                <span class="tcp-log-stat">⬆️ ${formatBytes(log.upload_bytes)}</span>
+                                <span class="tcp-log-stat">⬇️ ${formatBytes(log.download_bytes)}</span>
+                            </div>
+                            ${log.upload_hex ? `
+                                <div>
+                                    <div class="tcp-hex-header">上传 (HEX):</div>
+                                    <div class="tcp-hex">${log.upload_hex}</div>
+                                </div>
+                            ` : `
+                                <div>
+                                    <div class="tcp-hex-header">上传 (HEX):</div>
+                                    <div class="tcp-hex" style="color: #999;">无数据</div>
+                                </div>
+                            `}
+                            ${log.download_hex ? `
+                                <div style="margin-top: 8px;">
+                                    <div class="tcp-hex-header">下载 (HEX):</div>
+                                    <div class="tcp-hex">${log.download_hex}</div>
+                                </div>
+                            ` : `
+                                <div style="margin-top: 8px;">
+                                    <div class="tcp-hex-header">下载 (HEX):</div>
+                                    <div class="tcp-hex" style="color: #999;">无数据</div>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                }
             }).join('');
         }
 

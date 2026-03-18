@@ -3,18 +3,34 @@
 port = 8080
 label = "用户服务"
 target = "http://localhost:3000"
+type = "http"
 
 [[proxies]]
 port = 8081
 label = "订单服务"
 target = "http://localhost:3001"
+type = "http"
+
+# TCP 代理配置
+[[proxies]]
+port = 3306
+label = "MySQL 服务"
+target = "localhost:3307"
+type = "tcp"
+
+[[proxies]]
+port = 16379
+label = "Redis 服务"
+target = "localhost:6379"
+type = "tcp"
 
 # 日志配置
 [log]
 dir = "./logs"
-level = "info"
+level = "debug"
 maxSize = 100
 maxBackups = 100
+console = true  # 是否输出到控制台
 
 # 监控配置
 [monitor]
